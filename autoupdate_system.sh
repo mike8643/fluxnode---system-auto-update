@@ -3,8 +3,12 @@
 # Get the current timestamp
 timestamp=$(date +"%Y-%m-%d %T")
 
+updates=1
 # Get the node information
 node=$(/usr/local/bin/flux-cli getinfo)
+nodestatus=$(/usr/local/bin/flux-cli getzelnodestatus) # added for check for confirmed status
+nodelist=$(/usr/local/bin/flux-cli viewdeterministiczelnodelist)
+nodecount=$(/usr/local/bin/flux-cli getzelnodecount)
 
 # Check if flux-cli command is successful
 if [ $? -ne 0 ]; then
@@ -12,8 +16,30 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Extract the ip address
+ipaddy=$(echo $nodestatus | jq '.ip' -r)
+
+# Extract the rank
+noderank=$(echo $nodelist | jq '.[] | select(.ip=='\"$ipaddy\"') | .rank')
+
+# Extract the node tier
+nodetier=$(echo $nodestatus | jq '.tier' -r)
+
+# Extract the number of nodes in tier
+case $nodetier in 
+	CUMULUS) 
+		tierhigh=$(echo $nodecount | jq '."cumulus-enabled"' -r);; 
+	NIMBUS) 
+		tierhigh=$(echo $nodecount | jq '."nimbus-enabled"' -r);; 
+	STRATUS) 
+		tierhigh=$(echo $nodecount | jq '."stratus-enabled"' -r);; 
+esac
+
+# Calculate queue window
+queuewindow=$(($tierhigh-720))
+
 # Extract the status from the node information
-status=$(echo $node | jq '.status' -r)
+status=$(echo $nodestatus | jq '.status' -r) # changed node to nodestatus
 
 # Extract the version from the node information
 ver=$(echo $node | jq '.version' -r)
@@ -37,7 +63,7 @@ else
     current_height=$(echo $blockchain | jq '.data' -r)
 
     # Extract the confirmed height from the node information
-    confirmed_height=$(echo $node | jq '.last_confirmed_height' -r)
+    confirmed_height=$(echo $nodestatus | jq '.last_confirmed_height' -r) # changed node to nodestatus
 
     # Calculate the number of blocks in maintenance
     maintanance_blocks=$(($current_height - $confirmed_height))
@@ -45,14 +71,16 @@ else
     # Calculate the number of blocks until maintenance
     maintanace=$((120 - $maintanance_blocks))
 
-    # Update the package list
-    sudo apt-get update -qq -y
-
-    echo "$timestamp Updated"
-
-    # Check for updates
-    updates=$(apt list --upgradable 2>/dev/null | wc -l)
-
+	# Only check for updates if within queue window
+	if [ $noderank -ge $queuewindow ]; then
+		# Update the package list
+		sudo apt-get update -qq -y
+		echo "$timestamp  Updated"
+		# Check for updates
+		updates=$(apt list --upgradable 2>/dev/null | wc -l)
+	else
+		echo $timestamp Not in window
+	fi
     # If no updates are available
     if [ $updates -eq 1 ]; then
         # Print a message and exit the script
