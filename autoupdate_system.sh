@@ -36,7 +36,7 @@ case $nodetier in
 esac
 
 # Calculate queue window
-queuewindow=$(($tierhigh-720))
+queuewindow=$(($tierhigh-1440))
 
 # Extract the status from the node information
 status=$(echo $nodestatus | jq '.status' -r) # changed node to nodestatus
