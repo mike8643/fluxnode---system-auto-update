@@ -71,52 +71,79 @@ else
     # Calculate the number of blocks until maintenance
     maintanace=$((120 - $maintanance_blocks))
 
-	# Only check for updates if within queue window
-	if [ $noderank -ge $queuewindow ]; then
-		# Update the package list
-		sudo apt-get update -qq -y
-		echo "$timestamp  Updated"
-		# Check for updates
-		updates=$(apt list --upgradable 2>/dev/null | wc -l)
+
+	# Update the package list
+	sudo apt-get update -qq -y
+	# Check for updates
+	updates=$(apt list --upgradable 2>/dev/null | wc -l)
+	# Check for github update
+	cd $HOME/zelflux
+	git fetch
+	if git merge-base --is-ancestor origin/master master; then
+		echo "No Changes to FluxOS"
+		gittest=0
 	else
-		echo $timestamp Not in window
+		echo "Found Changes to FluxOS"
+		gittest=1
 	fi
+
+
     # If no updates are available
-    if [ $updates -eq 1 ]; then
+    if [ $updates -eq 1 ] && [ $gittest -eq 0 ]; then
         # Print a message and exit the script
         echo "$timestamp No updates available."
         exit 0
     else
-        # Upgrade the packages
-        sudo apt-get upgrade -qq -y
-
-        echo "$timestamp Upgraded"
-
-        # Print a message
-        echo "$timestamp Updates installed, checking if reboot is required"
-
-        # Check if a reboot is required
-        if systemctl list-jobs --no-legend --full --all | grep 'reboot.target' ; then
-          # Check if node CONFIRMED
-          if [ $status != "CONFIRMED" ]; then
-            echo "$timestamp Reboot..."
-            sudo reboot
-          else
-            if [ $maintanace -le 20 ]; then
-              delay=$(((maintanace*2)+80))
-              #Schedule reboot after delay
-              echo "$timestamp Scheduling reboot after $delay minutes"
-              sudo shutdown -r +$delay
-            else
-              echo "$timestamp Reboot..."
-              sudo reboot
-            fi
-          fi
-        else
-      	   #If reboot is not required, exit the script
-      	   echo "$timestamp No reboot required"
-      	   exit 0
-      	 fi
-       fi
-      fi
-
+        
+		# Within queue window check
+		if [ $noderank -ge $queuewindow ]; then
+			# Within maintenance window, Gate #2
+			if [ $maintanace -le 20 ]; then
+				delay=$(((maintanace*2)+90))
+				delayed=$(((maintanace*120)+4800))
+			else
+				delay=0
+				delayed=0
+			fi
+				
+			# Found Changes in github?
+			if [ $gittest -eq 1 ]; then
+				# Upgrade the packages and FluxOS
+				delayed=$(((maintanace*120)+4800))
+				echo "FluxOS update delayed due to maintenance window after $delay minutes"
+				sleep $delay 
+				echo "$timestamp Packages and FluxOS being upgraded"
+				sudo apt-get update -y && sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y &&cd $HOME/zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull && sudo reboot
+			fi
+		
+			if [ $updates -ne 1 ]; then
+				# Upgrade just the packages
+				sudo apt-get update -y && sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y				
+				echo "$timestamp Packages Upgraded"
+			fi
+			# Check if a reboot is required
+			if systemctl list-jobs --no-legend --full --all | grep 'reboot.target' ; then
+				# Check if node CONFIRMED
+				if [ $status != "CONFIRMED" ]; then
+					echo "$timestamp Reboot..."
+					sudo reboot
+				else
+					if [ $maintanace -le 20 ]; then
+						#Schedule reboot after delay
+						echo "$timestamp Scheduling reboot after $delay minutes"
+						sudo shutdown -r +$delay
+					else
+						echo "$timestamp Reboot..."
+						sudo reboot
+					fi
+				fi
+			else
+				#If reboot is not required, exit the script
+				echo "$timestamp No reboot required"
+				exit 0
+			fi		
+		else
+			echo "$timestamp Not in window, Currently Rank $noderank"
+		fi
+	fi
+fi
