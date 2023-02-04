@@ -18,6 +18,10 @@ fi
 
 # Extract the ip address
 ipaddy=$(echo $nodestatus | jq '.ip' -r)
+if [ -z $ipaddy ]; then
+	echo "IP not found in status"
+	ipaddy=1.2.3.4
+fi
 
 # Extract the rank
 noderank=$(echo $nodelist | jq '.[] | select(.ip=='\"$ipaddy\"') | .rank')
