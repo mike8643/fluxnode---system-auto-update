@@ -1,9 +1,12 @@
 #!/bin/bash
 
+# Configuration
+queuehours=48
+maintenanceminutes=20
+
 # Get the current timestamp
 timestamp=$(date +"%Y-%m-%d %T")
 
-updates=1
 # Get the node information
 node=$(/usr/local/bin/flux-cli getinfo)
 nodestatus=$(/usr/local/bin/flux-cli getzelnodestatus) # added for check for confirmed status
@@ -43,7 +46,7 @@ case $nodetier in
 esac
 
 # Calculate queue window
-queuewindow=$(($tierhigh-1440))
+queuewindow=$(($tierhigh-($queuehours*30)))
 
 # Extract the status from the node information
 status=$(echo $nodestatus | jq '.status' -r) # changed node to nodestatus
@@ -106,7 +109,7 @@ else
 		# Within queue window check
 		if [ $noderank -ge $queuewindow ]; then
 			# Within maintenance window, Gate #2
-			if [ $maintanace -le 20 ]; then
+			if [ $maintanace -le $maintenanceminutes ]; then
 				delay=$(((maintanace*2)+90))
 				delayed=$(((maintanace*120)+4800))
 			else
@@ -135,7 +138,7 @@ else
 					echo "$timestamp Reboot..."
 					sudo reboot
 				else
-					if [ $maintanace -le 20 ]; then
+					if [ $maintanace -le $maintenanceminutes ]; then
 						#Schedule reboot after delay
 						echo "$timestamp Scheduling reboot after $delay minutes"
 						sudo shutdown -r +$delay
