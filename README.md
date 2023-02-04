@@ -30,7 +30,7 @@ Login to the server with the same user as the node (`home` directory where the f
 
 download the script 
 ```
-wget https://github.com/mike8643/fluxnode---system-auto-update/releases/download/v1.0.0/autoupdate_system.sh
+wget https://raw.githubusercontent.com/mike8643/fluxnode---system-auto-update/main/autoupdate_system.sh
 ```
 
 copy and paste command below to set the `exec` permission to the script , create `log` file and setup *crontab*
