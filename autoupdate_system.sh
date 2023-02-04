@@ -120,7 +120,7 @@ else
 				echo "FluxOS update delayed due to maintenance window after $delay minutes"
 				sleep $delayed 
 				echo "$timestamp Packages and FluxOS being upgraded"
-				sudo apt-get update -y && sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y &&cd $HOME/zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull && sudo reboot
+				sudo apt-get update -y && sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y && cd $HOME/zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull && sudo reboot
 			fi
 		
 			if [ $updates -ne 1 ]; then
