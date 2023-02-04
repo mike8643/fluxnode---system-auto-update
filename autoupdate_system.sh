@@ -21,7 +21,10 @@ ipaddy=$(echo $nodestatus | jq '.ip' -r)
 
 # Extract the rank
 noderank=$(echo $nodelist | jq '.[] | select(.ip=='\"$ipaddy\"') | .rank')
-
+if [ -z $noderank ]; then
+	echo "Node not found in list"
+	noderank=999999
+fi
 # Extract the node tier
 nodetier=$(echo $nodestatus | jq '.tier' -r)
 
@@ -71,7 +74,6 @@ else
     # Calculate the number of blocks until maintenance
     maintanace=$((120 - $maintanance_blocks))
 
-
 	# Update the package list
 	sudo apt-get update -qq -y
 	# Check for updates
@@ -79,12 +81,14 @@ else
 	# Check for github update
 	cd $HOME/zelflux
 	git fetch
-	if git merge-base --is-ancestor origin/master master; then
+	current_ver=$(jq -r '.version' $HOME/zelflux/package.json)
+	check_ver=$(curl -s https://raw.githubusercontent.com/RunOnFlux/flux/master/package.json | jq -r '.version')
+	if [ "$current_ver" != "$check_ver" ]; then
+		echo "Found Changes to FluxOS, Current Version $current_ver , Found Version $check_ver"
+		gittest=1
+	else
 		echo "No Changes to FluxOS"
 		gittest=0
-	else
-		echo "Found Changes to FluxOS"
-		gittest=1
 	fi
 
 
@@ -105,13 +109,12 @@ else
 				delay=0
 				delayed=0
 			fi
-				
+
 			# Found Changes in github?
 			if [ $gittest -eq 1 ]; then
 				# Upgrade the packages and FluxOS
-				delayed=$(((maintanace*120)+4800))
 				echo "FluxOS update delayed due to maintenance window after $delay minutes"
-				sleep $delay 
+				sleep $delayed 
 				echo "$timestamp Packages and FluxOS being upgraded"
 				sudo apt-get update -y && sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y &&cd $HOME/zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull && sudo reboot
 			fi
@@ -138,7 +141,7 @@ else
 					fi
 				fi
 			else
-				#If reboot is not required, exit the script
+				# If reboot is not required, exit the script
 				echo "$timestamp No reboot required"
 				exit 0
 			fi		
