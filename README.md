@@ -8,11 +8,11 @@ Using *Crontab* for autoupdates
 
 It gets the node information using the `flux-cli` getinfo command, which is used to check if the node is running
 
-It calculates the number of blocks for maintenance window
+It calculates the number of blocks for maintenance window. Will not update within 20 minutes of maintenance window closing
 
-It calculates the node queue window based on the current rank compared to highest rank in tier. 2 days from highest rank
+It calculates the node queue window based on the current rank compared to highest rank in tier. Will not update within 2 days from highest rank in tier
 
-It updates the package list using the `sudo apt update` command and then checks for available updates using the apt list --upgradable command
+It updates the package list using the `sudo apt update` command and then checks for available updates using the `apt list --upgradable command`
 
 If updates are available, it upgrades the packages using the `sudo apt upgrade -y` command
 
@@ -22,7 +22,7 @@ If a reboot is required, it checks if the node status is "CONFIRMED" and if the 
 
 If a reboot is not required, it exits the script
 
-It updates the FluxOS node software pulling from the official repo using command cd $HOME/zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull
+It updates the FluxOS node software pulling from the official repo using command `cd $HOME/zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull`
 
 ## How to use:
 
