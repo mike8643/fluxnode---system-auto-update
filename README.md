@@ -8,15 +8,15 @@ Using *Crontab* for autoupdates
 
 It gets the node information using the `flux-cli` getinfo command, which is used to check if the node is running
 
-It calculates the number of blocks for maintenance window. Will not update within 20 minutes of maintenance window closing
+It calculates the number of blocks for maintenance window. Will not update within 20 minutes of maintenance window closing, delays update until after maintenace window opens up.
 
-It calculates the node queue window based on the current rank compared to highest rank in tier. Will not update within 2 days from highest rank in tier
+It calculates the node queue window based on the current rank compared to highest rank in tier. Will only update within 2 days (1440 spots) from highest rank in tier. **Thanks @Professor Chaos
 
 It updates the package list using the `sudo apt update` command and then checks for available updates using the `apt list --upgradable` command
 
 If updates are available, it upgrades the packages using the `sudo apt upgrade -y` command
 
-It checks if a reboot is required 
+It checks if a reboot is required
 
 If a reboot is required, it checks if the node status is "CONFIRMED" and if the maintenance window is open (i.e. if the number of blocks until maintenance is less than or equal to 20) and if so, it schedules a reboot after a delay of 20 minutes plus the number of minutes until maintenance 
 
@@ -38,7 +38,7 @@ copy and paste command below to set the `exec` permission to the script , create
 chmod +x autoupdate_system.sh && mkdir crontab_logs && touch crontab_logs/autouptade_os.log && crontab -l | sed "\$a0 23 * * * /home/$USER/autoupdate_system.sh >> /home/$USER/crontab_logs/autouptade_os.log 2>&1" | crontab -
 ```
 
-the *Crontab* is set to execute script everyday at 6pm EST (2300 UTC)
+the *Crontab* is set to execute script everyday at 6pm EST (2300 UTC). You can change the daily reoccuring time to whatever you want by modifying *23* in the above script to any hour in UTC you want.
 
 Logs directory `/home/$USER/crontab_logs/autouptade_os.log`
 
