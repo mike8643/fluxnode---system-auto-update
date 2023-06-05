@@ -126,7 +126,7 @@ else
 				sudo apt-get update -y && sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y && cd $HOME/zelflux && git checkout . && git checkout master && git reset --hard origin/master && git pull && sudo reboot
 			fi
 		
-			if [ $updates -ne 1 ]; then
+			if [ $updates -ne 1 ] && [ $gittest -eq 0 ]; then
 				# Upgrade just the packages
 				sudo apt-get update -y && sudo apt-get --with-new-pkgs upgrade -y && sudo apt autoremove -y				
 				echo "$timestamp Packages Upgraded"
